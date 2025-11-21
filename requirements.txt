@@ -26,15 +26,3 @@ openpyxl>=3.1.0
 # Utilities
 scipy>=1.10.0
 requests>=2.31.0
-
-# Additional dependencies for model training (optional for deployment)
-# Uncomment if training locally:
-# numba>=0.57.0
-# libpysal>=4.9.0
-# spopt>=0.5.0
-# hdbscan>=0.8.0
-
-# Web scraping (only if needed for production)
-# beautifulsoup4>=4.12.0
-# lxml>=4.9.0
-# tenacity>=8.2.0
