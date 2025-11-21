@@ -1,24 +1,8 @@
-# Core Streamlit app
 streamlit
 pandas
 numpy
-
-# Machine Learning
 scikit-learn
 joblib
-torch
-
-# Geospatial
-geopandas
-shapely
-pyproj
-
-# Visualization
 folium
 streamlit-folium
-
-# File handling
 openpyxl
-
-# Utilities
-scipy
