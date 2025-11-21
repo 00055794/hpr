@@ -14,11 +14,36 @@ except ImportError:
     from folium.plugins import MousePosition
     Geocoder = None
 import traceback
+from datetime import datetime
 
 # Import our notebook-matched pipeline
 from pipeline_complete import CompletePipeline
 
 st.set_page_config(page_title="KZ Real Estate Price Estimator", layout="wide")
+
+# Add Kazakhstan satellite background
+st.markdown("""
+<style>
+    .stApp {
+        background-image: url('https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74393/kazakhstan_tmo_2012032_lrg.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(14, 17, 23, 0.85);
+        z-index: -1;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("KZ Real Estate Price Estimator")
 
 
@@ -56,7 +81,7 @@ with col_single:
     st.subheader("Single Prediction")
     
     # Map picker (collapsed by default)
-    with st.expander("Pick location on map", expanded=False):
+    with st.expander("Pick location on map or Search by Address", expanded=False):
         # Use session state for coordinates
         if "LATITUDE" not in st.session_state:
             st.session_state["LATITUDE"] = 43.2567
@@ -186,7 +211,14 @@ with col_batch:
     
     if upload is not None:
         try:
-            df_in = pd.read_csv(upload)
+            # Read CSV with full float precision for lat/lon
+            df_in = pd.read_csv(upload, float_precision='high')
+            
+            # Ensure lat/lon have full precision (not rounded)
+            if 'LATITUDE' in df_in.columns:
+                df_in['LATITUDE'] = df_in['LATITUDE'].astype(float)
+            if 'LONGITUDE' in df_in.columns:
+                df_in['LONGITUDE'] = df_in['LONGITUDE'].astype(float)
             
             # Make predictions
             predictions_kzt = pipeline.predict_batch(df_in)
@@ -199,11 +231,14 @@ with col_batch:
             
             # Show results with all input features + prediction
             display_cols = [c for c in ["ROOMS", "LONGITUDE", "LATITUDE", "TOTAL_AREA", "FLOOR", "TOTAL_FLOORS", "FURNITURE", "CONDITION", "CEILING", "MATERIAL", "YEAR", "pred_price_kzt"] if c in df_out.columns]
-            st.dataframe(df_out[display_cols].head(50), use_container_width=True)
             
-            # Prepare download
+            # Format display to show full lat/lon precision
+            df_display = df_out[display_cols].head(50).copy()
+            st.dataframe(df_display, use_container_width=True)
+            
+            # Prepare download with full precision
             import time
-            csv_bytes = df_out.to_csv(index=False).encode("utf-8")
+            csv_bytes = df_out.to_csv(index=False, float_format='%.10f').encode("utf-8")
             st.session_state["batch_csv_bytes"] = csv_bytes
             _ts = time.strftime("%Y%m%d_%H%M%S")
             st.session_state["batch_csv_name"] = f"predictions_{_ts}.csv"
@@ -235,3 +270,49 @@ with col_batch:
             mime="text/csv",
             use_container_width=True
         )
+    
+    # ==================== COMMENTS SECTION (Ultra Compact) ====================
+    st.markdown("---")
+    st.markdown("**User Feedback**")
+    
+    with st.form("comment_form", clear_on_submit=True):
+        fcol1, fcol2, fcol3 = st.columns([2, 3, 1])
+        with fcol1:
+            user_email = st.text_input("Email", placeholder="your@email.com", label_visibility="collapsed")
+        with fcol2:
+            user_comment = st.text_input("Comment", placeholder="Share your feedback...", label_visibility="collapsed")
+        with fcol3:
+            submit_button = st.form_submit_button("Submit")
+        
+        if submit_button:
+            if user_comment.strip():
+                try:
+                    # Prepare comment data
+                    comment_data = {
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        'email': user_email.strip() if user_email else '',
+                        'comment': user_comment.strip()
+                    }
+                    
+                    # Get the app directory
+                    app_dir = os.path.dirname(os.path.abspath(__file__))
+                    comments_file = os.path.join(app_dir, 'comments.csv')
+                    
+                    # Check if file exists
+                    if os.path.exists(comments_file):
+                        # Append to existing file
+                        df_comments = pd.read_csv(comments_file)
+                        df_comments = pd.concat([df_comments, pd.DataFrame([comment_data])], ignore_index=True)
+                    else:
+                        # Create new file
+                        df_comments = pd.DataFrame([comment_data])
+                    
+                    # Save to CSV
+                    df_comments.to_csv(comments_file, index=False)
+                    st.success("✅ Thank you!")
+                    
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+            else:
+                st.warning("Please enter a comment.")
+
