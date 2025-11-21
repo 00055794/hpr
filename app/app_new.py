@@ -15,6 +15,8 @@ except ImportError:
     Geocoder = None
 import traceback
 from datetime import datetime
+import requests
+import base64
 
 # Import our notebook-matched pipeline
 from pipeline_complete import CompletePipeline
@@ -294,22 +296,68 @@ with col_batch:
                         'comment': user_comment.strip()
                     }
                     
-                    # Get the app directory
-                    app_dir = os.path.dirname(os.path.abspath(__file__))
-                    comments_file = os.path.join(app_dir, 'comments.csv')
+                    # GitHub API configuration
+                    github_token = st.secrets.get("GITHUB_TOKEN", "")
+                    repo_owner = "00055794"
+                    repo_name = "hpr"
+                    file_path = "comments.csv"
                     
-                    # Check if file exists
-                    if os.path.exists(comments_file):
-                        # Append to existing file
-                        df_comments = pd.read_csv(comments_file)
-                        df_comments = pd.concat([df_comments, pd.DataFrame([comment_data])], ignore_index=True)
+                    if github_token:
+                        # GitHub API endpoint
+                        api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/{file_path}"
+                        headers = {
+                            "Authorization": f"token {github_token}",
+                            "Accept": "application/vnd.github.v3+json"
+                        }
+                        
+                        # Get existing file
+                        response = requests.get(api_url, headers=headers)
+                        
+                        if response.status_code == 200:
+                            # File exists - update it
+                            file_info = response.json()
+                            existing_content = base64.b64decode(file_info['content']).decode('utf-8')
+                            df_comments = pd.read_csv(pd.io.common.StringIO(existing_content))
+                            df_comments = pd.concat([df_comments, pd.DataFrame([comment_data])], ignore_index=True)
+                            sha = file_info['sha']
+                        else:
+                            # File doesn't exist - create new
+                            df_comments = pd.DataFrame([comment_data])
+                            sha = None
+                        
+                        # Convert to CSV and encode
+                        csv_content = df_comments.to_csv(index=False)
+                        encoded_content = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
+                        
+                        # Prepare commit data
+                        commit_data = {
+                            "message": f"Add user comment from {comment_data['email'] or 'anonymous'}",
+                            "content": encoded_content,
+                            "branch": "main"
+                        }
+                        if sha:
+                            commit_data["sha"] = sha
+                        
+                        # Push to GitHub
+                        push_response = requests.put(api_url, json=commit_data, headers=headers)
+                        
+                        if push_response.status_code in [200, 201]:
+                            st.success("Submitted")
+                        else:
+                            st.error(f"Failed to save: {push_response.status_code}")
                     else:
-                        # Create new file
-                        df_comments = pd.DataFrame([comment_data])
-                    
-                    # Save to CSV
-                    df_comments.to_csv(comments_file, index=False)
-                    st.success("✅ Thank you!")
+                        # Fallback to local file if no GitHub token
+                        app_dir = os.path.dirname(os.path.abspath(__file__))
+                        comments_file = os.path.join(app_dir, 'comments.csv')
+                        
+                        if os.path.exists(comments_file):
+                            df_comments = pd.read_csv(comments_file)
+                            df_comments = pd.concat([df_comments, pd.DataFrame([comment_data])], ignore_index=True)
+                        else:
+                            df_comments = pd.DataFrame([comment_data])
+                        
+                        df_comments.to_csv(comments_file, index=False)
+                        st.success("Submitted")
                     
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
