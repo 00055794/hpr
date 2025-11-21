@@ -56,6 +56,13 @@ if bg_image:
             background-color: rgba(14, 17, 23, 0.85);
             z-index: -1;
         }}
+        /* Frame styling for columns */
+        [data-testid="column"] {{
+            background-color: rgba(50, 50, 50, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }}
     </style>
     """, unsafe_allow_html=True)
 
