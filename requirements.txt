@@ -3,6 +3,11 @@ pandas
 numpy
 scikit-learn
 joblib
+torch
+scipy
+geopandas
+shapely
+pyproj
 folium
 streamlit-folium
 openpyxl
