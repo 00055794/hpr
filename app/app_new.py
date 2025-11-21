@@ -40,11 +40,7 @@ if bg_image:
     st.markdown(f"""
     <style>
         .stApp {{
-            background-image: url('{bg_image}');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+            background-color: #0e1117;
         }}
         .stApp::before {{
             content: "";
@@ -53,7 +49,11 @@ if bg_image:
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(14, 17, 23, 0.85);
+            background-image: url('{bg_image}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.25;
             z-index: -1;
         }}
         /* Frame styling for columns */
