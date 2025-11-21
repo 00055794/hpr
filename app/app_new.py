@@ -23,28 +23,41 @@ from pipeline_complete import CompletePipeline
 
 st.set_page_config(page_title="KZ Real Estate Price Estimator", layout="wide")
 
-# Add Kazakhstan satellite background
-st.markdown("""
-<style>
-    .stApp {
-        background-image: url('https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74393/kazakhstan_tmo_2012032_lrg.jpg');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(14, 17, 23, 0.85);
-        z-index: -1;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Load and encode background image
+@st.cache_data
+def get_background_image():
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    bg_path = os.path.join(app_dir, "background.jpg")
+    if os.path.exists(bg_path):
+        with open(bg_path, "rb") as f:
+            data = base64.b64encode(f.read()).decode()
+        return f"data:image/jpeg;base64,{data}"
+    return None
+
+bg_image = get_background_image()
+
+if bg_image:
+    st.markdown(f"""
+    <style>
+        .stApp {{
+            background-image: url('{bg_image}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(14, 17, 23, 0.85);
+            z-index: -1;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
 
 st.title("KZ Real Estate Price Estimator")
 
