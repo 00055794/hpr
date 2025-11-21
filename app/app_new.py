@@ -150,7 +150,7 @@ with col_single:
     LATITUDE = r1c1.number_input("Latitude", 40.0, 55.0, st.session_state.get("LATITUDE", 43.2567), format="%.6f")
     LONGITUDE = r1c2.number_input("Longitude", 46.0, 87.0, st.session_state.get("LONGITUDE", 76.9286), format="%.6f")
     ROOMS = r1c3.number_input("Rooms", 1, 10, 2)
-    TOTAL_AREA = r1c4.number_input("Area (m┬▓)", 10.0, 500.0, 62.0, 1.0)
+    TOTAL_AREA = r1c4.number_input("Area (sq.m.)", 10.0, 500.0, 62.0, 1.0)
     
     # Row 2: Building details (5 columns to fit Floor/Total separately)
     r2c1, r2c2, r2c3, r2c4, r2c5 = st.columns(5)
@@ -188,7 +188,7 @@ with col_single:
             
             # Display result
             st.success(f"Predicted Price: {price_kzt:,.0f} KZT")
-            st.metric("Price per m┬▓", f"{price_kzt/TOTAL_AREA:,.0f} KZT/m┬▓")
+            st.metric("Price per sq.m.", f"{price_kzt/TOTAL_AREA:,.0f} KZT/sq.m.")
             
         except Exception as e:
             st.error(f"Prediction failed: {str(e)}")
